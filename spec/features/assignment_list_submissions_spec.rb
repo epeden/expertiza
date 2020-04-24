@@ -1,6 +1,8 @@
 describe "assignment list submissions test" do
   before(:each) do
     # create assignment and topic
+    @instructor = create(:instructor)
+    course = create(:course)
     @assignment = create(:assignment, name: "TestAssignment", directory_path: "TestAssignment")
     create_list(:participant, 3)
     create(:topic, topic_name: "Topic")
@@ -15,8 +17,8 @@ describe "assignment list submissions test" do
     create(:deadline_right, name: 'OK')
     create(:assignment_due_date, deadline_type: DeadlineType.where(name: "submission").first, due_at: DateTime.now.in_time_zone + 1.day)
     submit_assignment
-    user = User.find_by(name: "instructor6")
-    stub_current_user(user, user.role.name, user.role)
+    @ta = create(:teaching_assistant, name: "ta")
+    stub_current_user(@instructor, @instructor.role.name, @instructor.role)
   end
 
   def signup_topic
@@ -40,30 +42,43 @@ describe "assignment list submissions test" do
   end
 
   context "when current date is before the final deadline" do
-    context "when the user is a participant" do
+    context "when the user is the instructor and a participant" do
       before(:each) do
-        user = User.find_by(name: "instructor6")
-        create(:participant, assignment: @assignment, user: user)
+        create(:participant, assignment: @assignment, user: @instructor)
         visit "/assignments/list_submissions?id=1"
       end
-
       it "should show Perform Review Link" do
         expect(page).to have_link("Perform Review")
       end
     end
 
-    context "when the user is not a participant" do
+    context "when the user is the instructor and not a participant" do
       it "should not show Perform Review link" do
         visit "/assignments/list_submissions?id=1"
         expect(page).not_to have_link("Perform Review")
       end
     end
+
+    context "when the user is a TA and a participant" do
+      before(:each) do
+        # create TA and add them to the course and assignment
+        create(:participant, assignment: @assignment, user: @ta)
+        visit "/course/view_teaching_assistants?id=1&model=Course"
+        fill_in "user_name", with: "ta"
+        click_on("Add TA")
+        stub_current_user(@ta, @ta.role.name, @ta.role)
+        visit "/assignments/list_submissions?id=1"
+      end
+      it "should show Perform Review Link" do
+        expect(page).to have_link("Perform Review")
+      end
+    end
+
   end
 
   context "when the current date is after the final deadline" do
     before(:each) do
-      user = User.find_by(name: "instructor6")
-      create(:participant, assignment: @assignment, user: user)
+      create(:participant, assignment: @assignment, user: @instructor)
       Timecop.travel(2.days.from_now)
       visit "/assignments/list_submissions?id=1"
     end
