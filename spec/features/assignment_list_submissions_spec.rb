@@ -15,7 +15,7 @@ describe "assignment list submissions test" do
     create(:deadline_right)
     create(:deadline_right, name: 'Late')
     create(:deadline_right, name: 'OK')
-    create(:assignment_due_date, deadline_type: DeadlineType.where(name: "submission").first, due_at: DateTime.now.in_time_zone + 1.day)
+    create(:assignment_due_date, deadline_type: DeadlineType.where(name: "review").first, due_at: DateTime.now.in_time_zone + 1.day)
     submit_assignment
     @ta = create(:teaching_assistant, name: "ta")
     stub_current_user(@instructor, @instructor.role.name, @instructor.role)
